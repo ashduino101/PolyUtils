@@ -1,0 +1,184 @@
+{% extends "project_layout.html" %}
+
+{% block head %}
+    <script src="{{ url_for('static', filename='js/polyparser.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ace/ace.js') }}"></script>
+    <script>
+    let editor;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        editor = ace.edit("editor");
+
+        const currentTheme = localStorage.getItem('theme') ? localStorage.getItem('theme') : null;
+
+        if (currentTheme) {
+            document.documentElement.setAttribute('data-theme', currentTheme);
+
+            if (currentTheme === 'dark') {
+                editor.setTheme("ace/theme/twilight");
+            } else {
+                editor.setTheme("ace/theme/chrome");
+            }
+        }
+
+        document.getElementById("dark-mode-button").addEventListener("change", function(e) {
+            if (e.target.checked) {
+                editor.setTheme("ace/theme/twilight");
+            } else {
+                editor.setTheme("ace/theme/chrome");
+
+            }
+        });
+    });
+    let data;
+    let preData;
+    let type;
+    let fileName;
+
+    function handleFile(file) {
+        fileName = file.name;
+        let reader = new FileReader();
+        // Get as uint8array
+        reader.readAsArrayBuffer(file);
+        reader.onload = function(event) {
+            let arr = new Uint8Array(event.target.result);
+            if (file.name.endsWith(".layout")) {
+                preData = arr;
+                let d = new Deserializer(arr);
+                d.deserializeLayout();
+                data = d.dumpJSON();
+                type = "Layout";
+            } else if (file.name.endsWith(".layout.json")) {
+                // decode into string
+                let str = new TextDecoder("utf-8").decode(arr);
+                preData = str;
+                let s = new Serializer(str);
+                s.serializeLayout();
+                data = s.buffer;
+                type = "Layout JSON";
+            } else if (file.name.endsWith(".slot")) {
+                preData = arr;
+                let d = new SlotDeserializer(arr);
+                d.deserializeSlot();
+                data = d.dumpJSON();
+                type = "Slot";
+            } else if (file.name.endsWith(".slot.json")) {
+                let str = new TextDecoder("utf-8").decode(arr);
+                preData = str;
+                let s = new SlotSerializer(str);
+                s.serializeSlot();
+                data = s.buffer;
+                type = "Slot JSON";
+            } else {
+                data = null;
+                preData = null;
+                type = "Unknown";
+            }
+            editor.getSession().setMode("ace/mode/json");
+            editor.scrollToLine(0, true, true);
+
+            document.getElementById("filename-text").innerHTML = file.name;
+            document.getElementById("filename").style.display = "block";
+
+            let dlBtn = document.getElementById("download-button");
+            dlBtn.style.display = "block";
+            let title;
+            if (type === "Layout" || type === "Layout JSON") {
+                title = "Download .Layout";
+            } else if (type === "Slot" || type === "Slot JSON") {
+                title = "Download .Slot";
+            } else {
+                title = "Download";
+            }
+
+            dlBtn.innerHTML = title;
+
+            if (!type.endsWith(" JSON")) {
+                editor.setValue(data);
+                editor.clearSelection();
+                editor.focus();
+            } else {
+                editor.setValue(preData);
+                editor.clearSelection();
+                editor.focus();
+            }
+        };
+
+        return {
+            data: data,
+            preData: preData,
+            type: type
+        }
+    }
+
+    function dropHandler(event) {
+        event.preventDefault();
+        if (event.dataTransfer.items) {
+            let file = event.dataTransfer.items[0].getAsFile();
+            handleFile(file);
+        }
+    }
+
+    function dragOverHandler(event) {
+        event.preventDefault();
+    }
+
+    function uploadFile(event) {
+        let file = event.target.files[0];
+        handleFile(file);
+    }
+
+    function downloadFile(event) {
+        let s;
+        if (type === "Layout JSON" || type === "Layout") {
+            s = new Serializer(editor.getValue());
+            s.serializeLayout();
+        } else if (type === "Slot JSON" || type === "Slot") {
+            s = new SlotSerializer(editor.getValue());
+            s.serializeSlot();
+        } else {
+            alert("Unknown file type!");
+            return;
+        }
+
+        let blob = new Blob([s.buffer], {
+            type: "application/octet-stream"
+        });
+
+        let filename;
+        if (type === "Layout JSON" || type === "Slot JSON") {
+            // remove .json from filename
+            filename = fileName.substring(0, fileName.length - 5);
+        } else {
+            filename = fileName;
+        }
+
+        let url = window.URL.createObjectURL(blob);
+        let a = document.createElement("a");
+        a.style.display = "none";
+        a.href = url;
+        a.download = filename;
+        a.click();
+    }
+    </script>
+{% endblock %}
+
+{% block content %}
+    <div id="container" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);">
+        <div id="content">
+            <div id="upload-button">
+                <button id="upload-file-fake" onclick="document.getElementById('upload-file').click();">Upload</button>
+                <input type="file" id="upload-file" onchange="uploadFile(event);"/>
+            </div>
+            <div id="filename">
+                <h1 id="filename-text"></h1>
+            </div>
+            <div id="json-container">
+                <div id="editor"></div>
+            </div>
+            <div id="buttons">
+                <button id="download-button" onclick="downloadFile(event)"></button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
