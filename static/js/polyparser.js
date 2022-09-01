@@ -283,6 +283,9 @@ class Deserializer {
             edge.nodeBGuid = this.readString();
             edge.jointAPart = this.readInt32();
             edge.jointBPart = this.readInt32();
+            if (this.layout.bridge.version >= 11) {
+                edge.guid = this.readString();
+            }
             this.layout.bridge.edges.push(edge);
         }
 
