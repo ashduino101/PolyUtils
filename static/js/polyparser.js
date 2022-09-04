@@ -1897,7 +1897,7 @@ class SlotSerializer {
     writeString(value) {
         this.writeByte(0x00);
         this.writeInt32(value.length);
-        this.writeBytes(value, value.length);
+        this.writeBytes(new Uint8Array(new TextEncoder().encode(value)), value.length);
     }
     writeLong(value) {
         let bytes = new Uint8Array(8);
