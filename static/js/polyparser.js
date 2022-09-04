@@ -104,6 +104,12 @@ function unCSharpifyKeys(o) {
     return build;
 }
 
+function createUUID() {
+   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+   });
+}
 
 class Deserializer {
     constructor(data) {
@@ -1207,6 +1213,7 @@ class Serializer {
             this.writeString(e.nodeBGuid);
             this.writeInt32(e.jointAPart);
             this.writeInt32(e.jointBPart);
+            this.writeString(e.guid ? e.guid : createUUID())
         }
         // Springs
         this.writeInt32(b.springs.length);
