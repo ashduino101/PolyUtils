@@ -1627,22 +1627,18 @@ class SlotDeserializer {
         return view.getBigUint64(0)
     }
     readString() {
-        // I don't know how this works, I just ported it from the original code
         // UTF-8 or UTF-16LE
         let num = this.readByte();
         if (num < 0) {
             return "";
         }
-        if (num === 0x00) {
         if (num === 0x00) {  // utf8
             let num2 = this.readInt32();
             return new TextDecoder().decode(this.readBytes(num2));
         }
-        if (num === 0x01) {
         if (num === 0x01) {  // utf16
             let num3 = this.readInt32();
             let num4 = num3 * 2;
-            return new TextDecoder().decode(this.readBytes(num4));
             return new TextDecoder('utf-16').decode(this.readBytes(num4));
         }
     }
