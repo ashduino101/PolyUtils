@@ -22,7 +22,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-const MAX_LAYOUT_VERSION = 26;
+const MAX_LAYOUT_VERSION = 28;
 const MAX_BRIDGE_VERSION = 11;
 const MAX_SLOT_VERSION = 3;
 const MAX_PHYSICS_VERSION = 1;
@@ -655,6 +655,7 @@ class Deserializer {
             if (version >= 6) {
                 island.lockPosition = this.readBool();
             }
+            island.hidden = (this.layout.version >= 27 && this.readBool());
 
             this.layout.terrainStretches.push(island);
         }
@@ -819,6 +820,7 @@ class Deserializer {
         // Settings
         this.layout.settings.hydraulicsControllerEnabled = this.readBool();
         this.layout.settings.unbreakable = this.readBool();
+        this.layout.settings.no_water = (this.layout.version >= 28 && this.readBool());
 
         // Custom shapes in v9+
         if (version > 9) {
@@ -1213,7 +1215,7 @@ class Serializer {
             this.writeString(e.nodeBGuid);
             this.writeInt32(e.jointAPart);
             this.writeInt32(e.jointBPart);
-            this.writeString(e.guid ? e.guid : createUUID())
+            this.writeString(e.guid ? e.guid : createUUID());
         }
         // Springs
         this.writeInt32(b.springs.length);
@@ -1367,6 +1369,7 @@ class Serializer {
             this.writeInt32(s.variantIndex);
             this.writeBool(s.flipped);
             this.writeBool(s.lockPosition);
+            this.writeBool(s.hidden);
         }
 
         // Platforms
@@ -1464,6 +1467,7 @@ class Serializer {
         // Settings
         this.writeBool(this.layout.settings.hydraulicsControllerEnabled); // Hydraulics controller enabled
         this.writeBool(this.layout.settings.unbreakable); // Unbreakable
+        this.writeBool(this.layout.settings.no_water); // No water
 
         // Custom shapes
         this.writeInt32(this.layout.customShapes.length);
