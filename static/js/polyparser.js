@@ -820,7 +820,7 @@ class Deserializer {
         // Settings
         this.layout.settings.hydraulicsControllerEnabled = this.readBool();
         this.layout.settings.unbreakable = this.readBool();
-        this.layout.settings.no_water = (this.layout.version >= 28 && this.readBool());
+        this.layout.settings.noWater = (this.layout.version >= 28 && this.readBool());
 
         // Custom shapes in v9+
         if (version > 9) {
@@ -1467,7 +1467,7 @@ class Serializer {
         // Settings
         this.writeBool(this.layout.settings.hydraulicsControllerEnabled); // Hydraulics controller enabled
         this.writeBool(this.layout.settings.unbreakable); // Unbreakable
-        this.writeBool(this.layout.settings.no_water); // No water
+        this.writeBool(this.layout.settings.noWater); // No water
 
         // Custom shapes
         this.writeInt32(this.layout.customShapes.length);
