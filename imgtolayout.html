@@ -59,8 +59,14 @@
                 <div class="container"><h3 class="itl-text">Shapes</h3> <h4 id="shapesaddedtext">0</h4></div>
                 <div class="container"><h3 class="itl-text">Max Shapes</h3><input class="control" id="maxshapescaptextedit" type="number" min="20" step="1"></div>
                 <div class="container"><h3 class="itl-text">Scale: 10%</h3><input class="control" id="scaleedit" type="range" min="2" max="100" step="1" value="10"></div>
+                <div class="container"><label for="rectangles" class="itl-text">Rectangles</label><input class="control" id="rectangles" type="checkbox" checked></div>
+                <div class="container"><label for="circles" class="itl-text">Circles</label><input class="control" id="circles" type="checkbox" checked></div>
+                <div class="container" id="imofxcnt"><h3 class="itl-text shapecfg">Image Position X</h3><input class="control" id="imgposxedit" type="number" min="0" step="0.5" value="0"></div>
+                <div class="container" id="imofycnt"><h3 class="itl-text shapecfg">Image Position Y</h3><input class="control" id="imgposyedit" type="number" min="0" step="0.5" value="15"></div>
             </div>
             <div id="currentsvgcontainer"></div>
+            <input id="upload-layout-input" style="display: none;" type="file" accept="application/octet-stream">
+            <button id="upload-layout-btn" style="display: block" onclick="document.getElementById('upload-layout-input').click();">Upload Base Layout</button>
             <button id="download-button" onclick="convertShapesToLayout()" style="display: block">Download Layout</button>
         </div>
     </div>
@@ -76,8 +82,11 @@
     <script src="static/js/geometrize.js"></script>
     <script>
       let SCALE_FACTOR = 0.1
-      const VERTICAL_OFFSET = 15
+      let VERTICAL_OFFSET = 15
+      let HORIZONTAL_OFFSET = 0;
       const EXTRUSION_DEPTH = 0.00001  // render correctly
+
+      let loadedLayout = false;
 
       let scaleEdit = document.getElementById('scaleedit');
 
@@ -86,12 +95,37 @@
         SCALE_FACTOR = e.target.value / 100;
       });
 
+      document.getElementById('upload-layout-input').addEventListener('change', (e) => {
+        let reader = new FileReader();
+        let file = e.target.files[0];
+        if (!file.name.endsWith('.layout')) {
+          alert('Not a valid layout!');
+          return;
+        }
+
+        document.getElementById('imofxcnt').style.display = 'block';
+        document.getElementById('imofycnt').style.display = 'block';
+
+        reader.readAsArrayBuffer(file);
+        reader.onload = function(event) {
+          let arr = new Uint8Array(event.target.result);
+          let d = new Deserializer(arr);
+          d.deserializeLayout();
+          loadedLayout = d.layout;
+        }
+      });
+
       function convertShapesToLayout() {
         if (document.getElementById('currentsvgcontainer').children.length === 0) return;
 
         let s = new Serializer();
+        s.layout = loadedLayout ? loadedLayout : s.layout;
 
         let extrusion = 1;
+
+        if (loadedLayout && loadedLayout.customShapes.length > 0) {
+          extrusion -= (EXTRUSION_DEPTH * loadedLayout.customShapes.length) + EXTRUSION_DEPTH;
+        }
 
 
         for (let elem of document.getElementById('currentsvgcontainer').children[0].children) {
@@ -116,10 +150,10 @@
             let w = elem.getAttribute('width');
             let h = elem.getAttribute('height');
             points.push(
-              {'x': 0, 'y': VERTICAL_OFFSET},
-              {'x': w * SCALE_FACTOR, 'y': VERTICAL_OFFSET},
-              {'x': w * SCALE_FACTOR, 'y': -h * SCALE_FACTOR + VERTICAL_OFFSET},
-              {'x': 0, 'y': -h * SCALE_FACTOR + VERTICAL_OFFSET}
+              {'x': HORIZONTAL_OFFSET, 'y': VERTICAL_OFFSET},
+              {'x': w * SCALE_FACTOR + HORIZONTAL_OFFSET, 'y': VERTICAL_OFFSET},
+              {'x': w * SCALE_FACTOR + HORIZONTAL_OFFSET, 'y': -h * SCALE_FACTOR + VERTICAL_OFFSET},
+              {'x': HORIZONTAL_OFFSET, 'y': -h * SCALE_FACTOR + VERTICAL_OFFSET}
             )
           } else if (elem.tagName === 'circle') {
             for (let o of r1_c) {
@@ -128,7 +162,7 @@
               y = elem.getAttribute('cy');
               let r = elem.getAttribute('r');
               points.push({
-                'x': (o[0] * r) * SCALE_FACTOR,
+                'x': (o[0] * r) * SCALE_FACTOR + HORIZONTAL_OFFSET,
                 'y': (o[1] * r) * SCALE_FACTOR + VERTICAL_OFFSET
               });
             }
@@ -138,7 +172,7 @@
           }
 
           s.layout.customShapes.push({
-            pos: {'x': x * SCALE_FACTOR, 'y': -y * SCALE_FACTOR + VERTICAL_OFFSET, 'z': extrusion},
+            pos: {'x': x * SCALE_FACTOR + HORIZONTAL_OFFSET, 'y': -y * SCALE_FACTOR + VERTICAL_OFFSET, 'z': extrusion},
             rot: {'x': 0, 'y': 0, 'z': 0, 'w': 1},
             scale: {'x': 1, 'y': 1, 'z': 1},
             flipped: false,
