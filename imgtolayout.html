@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PolyUtils</title>
+    <link rel="stylesheet" href="static/css/style.css">
+    <script src="static/js/trianglify.js"></script>
+    <script src="static/js/chroma.js"></script>
+    <script src="static/js/layout_main.js"></script>
+    <script src="static/js/polyparser.js"></script>
+    <script src="https://kit.fontawesome.com/33159146e0.js" crossorigin="anonymous"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="og:title" content="PolyUtils">
+    <meta name="og:description" content="Utilities for Poly Bridge">
+    <meta name="og:color" content="#288CFF">
+    <script>
+      // Dark/light mode
+      document.addEventListener("DOMContentLoaded", function() {
+        let darkModeButton = document.getElementById("dark-mode-button");
+
+        function switchTheme(e) {
+          if (e.target.checked) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('theme', 'dark');
+          }
+          else {
+            document.documentElement.setAttribute('data-theme', 'light');
+            localStorage.setItem('theme', 'light');
+          }
+        }
+
+        const currentTheme = localStorage.getItem('theme') ? localStorage.getItem('theme') : null;
+
+        if (currentTheme) {
+          document.documentElement.setAttribute('data-theme', currentTheme);
+
+          if (currentTheme === 'dark') {
+            darkModeButton.checked = true;
+          }
+        }
+
+        darkModeButton.addEventListener('change', switchTheme, false);
+      });
+    </script>
+</head>
+<body>
+    <div id="bg-canvas-div">
+        <canvas id="bg-canvas"></canvas>
+    </div>
+    <div id="container">
+        <div id="content">
+            <div id="controls">
+                <a class="button" id="runpausebutton">Run</a>
+                <input id="openimageinput" type="file" style="display:none;" accept="image/*"/>
+                <input type="button" class="button" id="openimagebutton" value="Open Image" onclick="document.getElementById('openimageinput').click();">
+            </div>
+            <div class="textboxes">
+                <div class="container"><h3 class="itl-text">Shapes</h3> <h4 id="shapesaddedtext">0</h4></div>
+                <div class="container"><h3 class="itl-text">Max Shapes</h3><input class="control" id="maxshapescaptextedit" type="number" min="20" step="1"></div>
+                <div class="container"><h3 class="itl-text">Scale: 10%</h3><input class="control" id="scaleedit" type="range" min="2" max="100" step="1" value="10"></div>
+            </div>
+            <div id="currentsvgcontainer"></div>
+            <button id="download-button" onclick="convertShapesToLayout()" style="display: block">Download Layout</button>
+        </div>
+    </div>
+    <footer id="project-footer">
+        <p>Image to Layout: Uses Sam Twidale's Geometrize to convert images to PB2 layouts &middot; v1.0.0 &middot; MIT License</p>
+        <i class="fa-regular fa-sun fa-lg"></i>
+        <label id="dark-mode-button">
+            <input type="checkbox" id="dark-mode-checkbox" />
+            <span id="dark-mode-button-slider"></span>
+        </label>
+        <i class="fa-regular fa-moon footer-icon-dark fa-lg"></i>
+    </footer>
+    <script src="static/js/geometrize.js"></script>
+    <script>
+      let SCALE_FACTOR = 0.1
+      const VERTICAL_OFFSET = 15
+      const EXTRUSION_DEPTH = 0.00001  // render correctly
+
+      let scaleEdit = document.getElementById('scaleedit');
+
+      scaleEdit.addEventListener('change', (e) => {
+        scaleEdit.parentNode.children[0].textContent = 'Scale: ' + e.target.value + '%';
+        SCALE_FACTOR = e.target.value / 100;
+      });
+
+      function convertShapesToLayout() {
+        if (document.getElementById('currentsvgcontainer').children.length === 0) return;
+
+        let s = new Serializer();
+
+        let extrusion = 1;
+
+
+        for (let elem of document.getElementById('currentsvgcontainer').children[0].children) {
+          let points = [];
+          let x, y;
+          let col;
+          const parseColor = (elem, n) => {
+            let _color = elem.getAttribute(n).substring(4, elem.getAttribute(n).length - 1).split(',');
+            return {
+              'r': parseInt(_color[0]) / 255,
+              'g': parseInt(_color[1]) / 255,
+              'b': parseInt(_color[2]) / 255,
+              'a': 0  // not used
+            }
+          }
+          // points for circle with radius of 1 because I'm too lazy to do math
+          const r1_c = [[0.0, 1.0], [-0.06279052048921585, 0.9980268478393555], [-0.12533323466777802, 0.9921145439147949], [-0.1873813271522522, 0.9822874069213867], [-0.2486899048089981, 0.9685831069946289], [-0.30901700258255005, 0.9510564804077148], [-0.3681245446205139, 0.929776668548584], [-0.4257792830467224, 0.9048271179199219], [-0.48175370693206787, 0.8763065338134766], [-0.5358268618583679, 0.8443279266357422], [-0.5877853035926819, 0.8090171813964844], [-0.6374240517616272, 0.7705130577087402], [-0.6845471858978271, 0.728968620300293], [-0.7289687395095825, 0.684546947479248], [-0.7705133557319641, 0.6374239921569824], [-0.8090171217918396, 0.5877852439880371], [-0.8443280458450317, 0.5358266830444336], [-0.8763067722320557, 0.4817533493041992], [-0.9048271179199219, 0.4257793426513672], [-0.9297765493392944, 0.36812448501586914], [-0.9510565996170044, 0.30901670455932617], [-0.9685832262039185, 0.2486896514892578], [-0.9822872877120972, 0.18738079071044922], [-0.9921147227287292, 0.12533283233642578], [-0.9980267286300659, 0.0627899169921875], [-1.0, -4.76837158203125e-07], [-0.9980267286300659, -0.0627908706665039], [-0.9921146631240845, -0.1253337860107422], [-0.9822871685028076, -0.18738174438476562], [-0.9685830473899841, -0.24869060516357422], [-0.9510563611984253, -0.3090176582336426], [-0.9297763109207153, -0.36812496185302734], [-0.904826819896698, -0.4257798194885254], [-0.876306414604187, -0.4817543029785156], [-0.8443275690078735, -0.5358271598815918], [-0.8090165853500366, -0.5877857208251953], [-0.7705128192901611, -0.6374244689941406], [-0.7289681434631348, -0.6845474243164062], [-0.6845465898513794, -0.7289690971374512], [-0.6374233961105347, -0.7705135345458984], [-0.5877845883369446, -0.8090176582336426], [-0.5358260869979858, -0.8443284034729004], [-0.4817529320716858, -0.8763070106506348], [-0.42577850818634033, -0.9048275947570801], [-0.36812373995780945, -0.929776668548584], [-0.3090161383152008, -0.951056957244873], [-0.2486889809370041, -0.9685835838317871], [-0.1873803734779358, -0.9822874069213867], [-0.12533225119113922, -0.9921150207519531], [-0.06278950721025467, -0.9980268478393555], [1.0410971071905806e-06, -1.0], [0.06279158592224121, -0.9980268478393555], [0.12533432245254517, -0.9921145439147949], [0.18738241493701935, -0.9822869300842285], [0.24869099259376526, -0.9685831069946289], [0.3090181052684784, -0.9510560035705566], [0.36812567710876465, -0.9297761917114258], [0.42578038573265076, -0.9048266410827637], [0.48175475001335144, -0.8763060569763184], [0.5358278751373291, -0.844327449798584], [0.5877863168716431, -0.809016227722168], [0.6374250054359436, -0.770512580871582], [0.6845480799674988, -0.7289676666259766], [0.7289695739746094, -0.6845459938049316], [0.7705140113830566, -0.637423038482666], [0.8090177178382874, -0.5877842903137207], [0.8443285822868347, -0.5358257293701172], [0.8763072490692139, -0.4817523956298828], [0.9048275947570801, -0.4257783889770508], [0.9297769665718079, -0.36812353134155273], [0.9510568976402283, -0.30901575088500977], [0.9685835242271423, -0.2486886978149414], [0.9822875261306763, -0.1873798370361328], [0.9921149015426636, -0.12533187866210938], [0.9980267882347107, -0.0627889633178711], [1.0, 1.430511474609375e-06], [0.9980266094207764, 0.06279182434082031], [0.9921145439147949, 0.1253347396850586], [0.9822869896888733, 0.18738269805908203], [0.9685827493667603, 0.24869155883789062], [0.9510560035705566, 0.309018611907959], [0.9297758936882019, 0.36812591552734375], [0.9048263430595398, 0.4257807731628418], [0.876305878162384, 0.48175525665283203], [0.8443270325660706, 0.5358281135559082], [0.8090159893035889, 0.5877866744995117], [0.7705121636390686, 0.637425422668457], [0.7289674282073975, 0.6845483779907227], [0.6845458149909973, 0.7289700508117676], [0.6374226212501526, 0.7705144882202148], [0.5877837538719177, 0.8090181350708008], [0.535825252532959, 0.8443288803100586], [0.48175203800201416, 0.876307487487793], [0.4257775545120239, 0.9048280715942383], [0.36812275648117065, 0.9297771453857422], [0.3090151250362396, 0.951056957244873], [0.2486879676580429, 0.9685835838317871], [0.18737934529781342, 0.9822874069213867], [0.12533122301101685, 0.9921150207519531], [0.0627884641289711, 0.9980268478393555]]
+          if (elem.tagName === 'rect') {
+            col = parseColor(elem, 'fill');
+            x = elem.getAttribute('x');
+            y = elem.getAttribute('y');
+            let w = elem.getAttribute('width');
+            let h = elem.getAttribute('height');
+            points.push(
+              {'x': 0, 'y': VERTICAL_OFFSET},
+              {'x': w * SCALE_FACTOR, 'y': VERTICAL_OFFSET},
+              {'x': w * SCALE_FACTOR, 'y': -h * SCALE_FACTOR + VERTICAL_OFFSET},
+              {'x': 0, 'y': -h * SCALE_FACTOR + VERTICAL_OFFSET}
+            )
+          } else if (elem.tagName === 'circle') {
+            for (let o of r1_c) {
+              col = parseColor(elem, 'fill');
+              x = elem.getAttribute('cx');
+              y = elem.getAttribute('cy');
+              let r = elem.getAttribute('r');
+              points.push({
+                'x': (o[0] * r) * SCALE_FACTOR,
+                'y': (o[1] * r) * SCALE_FACTOR + VERTICAL_OFFSET
+              });
+            }
+          } else {
+            console.log('Unknown/unsupported element ' + elem.tagName);
+            continue;
+          }
+
+          s.layout.customShapes.push({
+            pos: {'x': x * SCALE_FACTOR, 'y': -y * SCALE_FACTOR + VERTICAL_OFFSET, 'z': extrusion},
+            rot: {'x': 0, 'y': 0, 'z': 0, 'w': 1},
+            scale: {'x': 1, 'y': 1, 'z': 1},
+            flipped: false,
+            dynamic: false,
+            collidesWithRoad: false,
+            collidesWithNodes: false,
+            collidesWithSplitNodes: false,
+            rotationDegrees: 0,
+            color: col,
+            mass: NaN,
+            bounciness: 0,
+            pinMotorStrength: 0,
+            pinTargetVelocity: 0,
+            pointsLocalSpace: points,
+            staticPins: [],
+            dynamicAnchorGuids: []
+          });
+
+          extrusion -= EXTRUSION_DEPTH;
+        }  // for
+
+        s.serializeLayout();
+        let blob = new Blob([s.buffer], {type: "application/octet-stream"});
+        let filename = document.getElementById('openimageinput').files[0].name.replace(/\.[^/.]+$/, "") + '.layout';
+
+        let url = window.URL.createObjectURL(blob);
+        let a = document.createElement("a");
+        a.style.display = "none";
+        a.href = url;
+        a.download = filename;
+        a.click();
+      }
+    </script>
+</body>
+</html>

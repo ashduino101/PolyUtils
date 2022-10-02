@@ -161,3 +161,336 @@ h3 {
     padding: 0;
     line-height: 30px;
 }
+
+#currentsvgcontainer {
+	width: 90%;
+	height: 90%;
+}
+
+:root {
+	--bg-color: #ebebeb;
+	--text-color: #232323;
+	--accent-color: #288cff;
+	--text-on-accent-color: #ebebeb;
+	--accent-color-dark: #1a5296;
+}
+
+[data-theme="dark"] {
+	--bg-color: #232323;
+	--text-color: #ebebeb;
+	--accent-color: #288cff;
+	--text-on-accent-color: #ebebeb;
+	--accent-color-dark: #1a5296;
+}
+
+#dark-mode-button {
+	position: absolute;
+	display: inline-block;
+	width: 42px;
+	height: 23px;
+	/* centered vertically on footer */
+	bottom: 4px;
+	right: 40px;
+	font-family: 'Font Awesome 5 Free', serif;
+}
+
+#dark-mode-button input {
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+#dark-mode-button-slider {
+	position: absolute;
+	cursor: pointer;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: var(--text-color);
+	border-radius: 22px;
+	transition: .4s;
+}
+
+#dark-mode-button-slider:before {
+	position: absolute;
+	content: "";
+	height: 16px;
+	width: 16px;
+	left: 4px;
+	bottom: 4px;
+	background-color: var(--bg-color);
+	border-radius: 50%;
+	transition: .4s;
+}
+
+input:checked + #dark-mode-button-slider {
+	background-color: var(--accent-color);
+}
+
+input:focus + #dark-mode-button-slider {
+	box-shadow: 0 0 1px var(--accent-color);
+}
+
+input:checked + #dark-mode-button-slider:before {
+	-ms-transform: translateX(20px);
+	transform: translateX(20px);
+}
+
+footer .fa-sun {
+	color: var(--text-color);
+	bottom: -4px;
+	right: 85px;
+	width: 20px;
+	height: 20px;
+	position: absolute;
+	display: inline-block;
+}
+
+footer .fa-moon {
+	color: var(--text-color);
+	bottom: -4px;
+	right: 15px;
+	width: 20px;
+	height: 20px;
+	position: absolute;
+	display: inline-block;
+}
+
+.itl-text {
+    font-family: "Open Sans", sans-serif;
+    margin-left: 10px;
+    text-shadow: none;
+    animation: none;
+    color: var(--text-color);
+    margin-bottom: 0;
+}
+
+#container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -100;
+    overflow: hidden;
+}
+
+#drop-area {
+    width: 90%;
+    height: 90%;
+    border-radius: 10px;
+    border: 2px dashed var(--text-color);
+    background-color: var(--bg-color);
+    opacity: 0.5;
+    z-index: 100000;
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    top: 5%;
+    left: 5%;
+    right: 5%;
+    bottom: 5%;
+    display: none;
+}
+
+#drop-text {
+    position: absolute;
+    top: 45%;
+    left: 45%;
+    transform: translate(-45%, -45%);
+    font-size: 2.5vw;
+    font-family: 'Roboto', sans-serif;
+    color: var(--text-color);
+    z-index: 1001;
+    opacity: 0.9;
+    user-select: none;
+    /* make it so it doesn't interfere with onDragLeave */
+    pointer-events: none;
+}
+
+#content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: 0;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    height: 80%;
+    user-select: none;
+    background-color: var(--bg-color);
+    border-radius: 5px;
+    box-shadow: 0 0 5px var(--bg-color);
+    opacity: 1;
+    z-index: -99;
+    transition: all 0.4s ease-in-out;
+}
+
+#upload-file {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* display: none doesn't work for some reason */
+    opacity: 0;
+}
+
+#upload-button {
+    position: absolute;
+    width: 10%;
+    height: 10%;
+    top: 10%;
+    left: 7%;
+    transform: translate(-50%, -50%);
+    z-index: 1001;
+}
+
+#upload-file-fake {
+    display: block;
+    position: absolute;
+    z-index: 1001;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    user-select: none;
+    background-color: var(--accent-color);
+    border-radius: 5px;
+    border: none;
+    color: var(--text-on-accent-color);
+    font-size: 1vw;
+    cursor: pointer;
+}
+
+#json-container {
+    position: absolute;
+    top: 0;
+    left: 30%;
+    width: 70%;
+    height: 100%;
+}
+
+#editor, #currentsvgcontainer {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+#currentsvgcontainer {
+    margin-left: auto;
+    margin-right: 0;
+    z-index: -1;
+    right: 0;
+    left: auto;
+    float: right;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.ace_editor,
+.ace_gutter,
+.ace_layer,
+.ace_print-margin,
+.ace_gutter-active-line,
+.ace_scroller {
+    transition: background-color 0.4s ease-in-out;
+}
+
+#filename {
+    color: var(--text-on-accent-color);
+    /* position it below the upload button */
+    position: absolute;
+    top: 18%;
+    left: 2%;
+    font-size: 0.3vw;
+    font-family: 'Roboto', sans-serif;
+    z-index: 1001;
+    background-color: var(--accent-color);
+    border-radius: 5px;
+    padding: 1px 5px 1px 5px;
+    display: none;
+}
+
+#download-button {
+    /* bottom left */
+    position: absolute;
+    left: 2%;
+    width: auto;
+    height: 10%;
+    bottom: 4%;
+    border-radius: 5px;
+    border: none;
+    background-color: var(--accent-color);
+    color: var(--text-on-accent-color);
+    font-size: 1vw;
+    font-family: 'Roboto', sans-serif;
+    cursor: pointer;
+    display: none;
+    padding: 0 10px 0 10px;
+}
+
+.control {
+    z-index: 1000;
+    position: absolute;
+    width: auto;
+}
+
+#runpausebutton {
+    padding: 2px 10px 2px 10px;
+    background-color: var(--accent-color);
+    color: var(--text-on-accent-color);
+    font-size: 0.75vw;
+    font-family: 'Roboto', sans-serif;
+    height: 30px;
+    border-radius: 5px;
+    cursor: pointer;
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    width: 5%;
+    text-align: center;
+}
+
+#openimagebutton {
+    padding: 0 10px 0 10px;
+    background-color: var(--accent-color);
+    color: var(--text-on-accent-color);
+    font-size: 0.75vw;
+    font-family: 'Roboto', sans-serif;
+    height: 40px;
+    border-radius: 5px;
+    cursor: pointer;
+    position: absolute;
+    left: 10px;
+    top: 50px;
+    width: 7%;
+    text-align: center;
+    border: none;
+}
+
+#shapesaddedtext {
+    color: var(--text-color);
+    font-family: 'Open Sans', sans-serif;
+}
+
+.textboxes {
+    position: absolute;
+    top: 120px;
+}
+
+#shapesaddedtext, #maxshapescaptextedit, #scaleedit {
+    margin-left: 10px;
+    margin-top: 0;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.container {
+    margin-top: 10px;
+}

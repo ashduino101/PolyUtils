@@ -4,104 +4,12 @@
     <meta charset="UTF-8">
     <title>PolyUtils</title>
     <link rel="stylesheet" href="static/css/style.css">
-    <link rel="stylesheet" href="static/css/style2.css">
     <script src="static/js/trianglify.js"></script>
     <script src="static/js/chroma.js"></script>
     <script src="static/js/layout_main.js"></script>
     <script src="static/js/polyparser.js"></script>
     <script src="static/js/ace/ace.js"></script>
     <script src="https://kit.fontawesome.com/33159146e0.js" crossorigin="anonymous"></script>
-    <style>
-        :root {
-            --bg-color: #ebebeb;
-            --text-color: #232323;
-            --accent-color: #288cff;
-            --text-on-accent-color: #ebebeb;
-            --accent-color-dark: #1a5296;
-        }
-
-        [data-theme="dark"] {
-            --bg-color: #232323;
-            --text-color: #ebebeb;
-            --accent-color: #288cff;
-            --text-on-accent-color: #ebebeb;
-            --accent-color-dark: #1a5296;
-        }
-
-        #dark-mode-button {
-            position: absolute;
-            display: inline-block;
-            width: 42px;
-            height: 23px;
-            /* centered vertically on footer */
-            bottom: 4px;
-            right: 40px;
-            font-family: 'Font Awesome 5 Free', serif;
-        }
-
-        #dark-mode-button input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        #dark-mode-button-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: var(--text-color);
-            border-radius: 22px;
-            transition: .4s;
-        }
-
-        #dark-mode-button-slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background-color: var(--bg-color);
-            border-radius: 50%;
-            transition: .4s;
-        }
-
-        input:checked + #dark-mode-button-slider {
-            background-color: var(--accent-color);
-        }
-
-        input:focus + #dark-mode-button-slider {
-            box-shadow: 0 0 1px var(--accent-color);
-        }
-
-        input:checked + #dark-mode-button-slider:before {
-            -ms-transform: translateX(20px);
-            transform: translateX(20px);
-        }
-
-        footer .fa-sun {
-            color: var(--text-color);
-            bottom: -4px;
-            right: 85px;
-            width: 20px;
-            height: 20px;
-            position: absolute;
-            display: inline-block;
-        }
-
-        footer .fa-moon {
-            color: var(--text-color);
-            bottom: -4px;
-            right: 15px;
-            width: 20px;
-            height: 20px;
-            position: absolute;
-            display: inline-block;
-        }
-    </style>
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="og:title" content="PolyUtils">
@@ -109,8 +17,6 @@
     <meta name="og:color" content="#288CFF">
 
     <script>
-        const project = "{{ project }}";
-
         // Dark/light mode
         document.addEventListener("DOMContentLoaded", function() {
             let darkModeButton = document.getElementById("dark-mode-button");
