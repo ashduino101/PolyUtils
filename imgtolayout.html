@@ -116,6 +116,8 @@
       });
 
       function convertShapesToLayout() {
+        HORIZONTAL_OFFSET = document.getElementById('imgposxedit').value;
+        VERTICAL_OFFSET = document.getElementById('imgposyedit').value;
         if (document.getElementById('currentsvgcontainer').children.length === 0) return;
 
         let s = new Serializer();
