@@ -1315,11 +1315,11 @@ export class Serializer {
           unbreakable: false,
           noWater: true
         },
+        description: "",
+        title: "",
         workshop: {
-          description: "",
           id: "",
           leaderboardId: "",
-          title: "",
           autoplay: false,
           tags: []
         },
@@ -1466,10 +1466,10 @@ export class Serializer {
     }
     // 8 bytes for workshop ID, another for leaderboard ID, 64 for title, figure out description, 16 bytes per tag
     size += 80;
-    size += this.layout.workshop.description.length;
-    size += this.layout.workshop.tags.length * 16;
+    size += this.layout.description.length;
+    // size += this.layout.workshop.tags.length * 16;
     // 48 bytes per support pillar
-    size += this.layout.supportPillars.length * 48;
+    // size += this.layout.supportPillars.length * 48;
     // 32 bytes per pillar
     size += this.layout.pillars.length * 32;
 
@@ -1878,24 +1878,26 @@ export class Serializer {
 
     // Workshop
     this.writeString(this.layout.workshop.id);
-    this.writeString(this.layout.workshop.leaderboardId);
-    this.writeString(this.layout.workshop.title);
-    this.writeString(this.layout.workshop.description);
+    this.writeString(this.layout.workshop.leaderboardId ?? "");
+    this.writeString(this.layout.title);
+    this.writeString(this.layout.description);
     this.writeBool(this.layout.workshop.autoplay);
 
-    this.writeInt32(this.layout.workshop.tags.length);
-    for (let i = 0; i < this.layout.workshop.tags.length; i++) {
-      this.writeString(this.layout.workshop.tags[i]);
-    }
+    // this.writeInt32(this.layout.workshop.tags.length);
+    // for (let i = 0; i < this.layout.workshop.tags.length; i++) {
+    //   this.writeString(this.layout.workshop.tags[i]);
+    // }
+    this.writeInt32(0);  // compat
 
     // Support pillars
-    this.writeInt32(this.layout.supportPillars.length);
-    for (let i = 0; i < this.layout.supportPillars.length; i++) {
-      let p = this.layout.supportPillars[i];
-      this.writeVec3(p.pos);
-      this.writeVec3(p.scale);
-      this.writeString(p.prefabName);
-    }
+    // this.writeInt32(this.layout.supportPillars.length);
+    // for (let i = 0; i < this.layout.supportPillars.length; i++) {
+    //   let p = this.layout.supportPillars[i];
+    //   this.writeVec3(p.pos);
+    //   this.writeVec3(p.scale);
+    //   this.writeString(p.prefabName);
+    // }
+    this.writeInt32(0);  // compat
 
     // Pillars
     this.writeInt32(this.layout.pillars.length);
