@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <title>PolyUtils</title>
     <link rel="stylesheet" href="css/style.css">
-    <script src="js/trianglify.js"></script>
-    <script src="js/chroma.js"></script>
-    <script src="js/layout_main.js"></script>
-    <script src="js/polyparser.js"></script>
-    <script src="js/ace/ace.js"></script>
+<!--    <script src="js/trianglify.js"></script>-->
+<!--    <script src="js/chroma.js"></script>-->
+    <script src="js/layout_main.js" type="module"></script>
+<!--    <script src="js/ace/ace.js"></script>-->
     <script src="https://kit.fontawesome.com/33159146e0.js" crossorigin="anonymous"></script>
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,7 +15,7 @@
     <meta name="og:description" content="Utilities for Poly Bridge">
     <meta name="og:color" content="#288CFF">
 
-    <script>
+    <script type="module">
         // Dark/light mode
         document.addEventListener("DOMContentLoaded", function() {
             let darkModeButton = document.getElementById("dark-mode-button");
@@ -45,32 +44,80 @@
             darkModeButton.addEventListener('change', switchTheme, false);
         });
     </script>
-    <script>
-    let editor;
+</head>
+<body>
+<!--    <div id="bg-canvas-div">-->
+<!--        <canvas id="bg-canvas"></canvas>-->
+<!--    </div>-->
+    <div id="container">
+        <div id="content">
+            <div id="upload-button">
+                <button id="upload-file-fake" onclick="document.getElementById('upload-file').click();">Upload</button>
+                <input type="file" id="upload-file"/>
+            </div>
+            <div id="filename">
+                <h1 id="filename-text"></h1>
+            </div>
+            <div id="json-container">
+                <div id="editor"></div>
+            </div>
+            <div id="buttons">
+                <button id="download-button"></button>
+            </div>
+        </div>
+    </div>
+    <footer id="project-footer">
+        <p>PolyUtils: Utilities for Poly Bridge &middot; v1.2.2 &middot; MIT License</p>
+        <i class="fa-regular fa-sun fa-lg"></i>
+        <label id="dark-mode-button">
+            <input type="checkbox" id="dark-mode-checkbox" />
+            <span id="dark-mode-button-slider"></span>
+        </label>
+        <i class="fa-regular fa-moon footer-icon-dark fa-lg"></i>
+    </footer>
+    <script type="module">
+        // import {load_layout} from "/pkg/polyutils";
+        // document.getElementById('upload-file').addEventListener('change', e => {
+        //     let file = e.target.files[0];
+        //     fileName = file.name;
+        //     let reader = new FileReader();
+        //     // Get as uint8array
+        //     reader.readAsArrayBuffer(file);
+        //     reader.onload = function(event) {
+        //         let arr = new Uint8Array(event.target.result);
+        //         let start = performance.now();
+        //         load_layout(arr);
+        //         console.log(`took ${performance.now() - start}ms`);
+        //     }
+        // })
 
-    document.addEventListener("DOMContentLoaded", function() {
-        editor = ace.edit("editor");
+    </script>
+    <script type="module">
+    import * as ace from 'ace-builds/src-noconflict/ace';
+    import * as polyparser from '/js/polyparser.js';
 
-        const currentTheme = localStorage.getItem('theme') ? localStorage.getItem('theme') : null;
+    ace.config.set('basePath', '/ace');
+    let editor = ace.edit("editor");
 
-        if (currentTheme) {
-            document.documentElement.setAttribute('data-theme', currentTheme);
+    const currentTheme = localStorage.getItem('theme') ? localStorage.getItem('theme') : null;
 
-            if (currentTheme === 'dark') {
-                editor.setTheme("ace/theme/twilight");
-            } else {
-                editor.setTheme("ace/theme/chrome");
-            }
+    if (currentTheme) {
+        document.documentElement.setAttribute('data-theme', currentTheme);
+
+        if (currentTheme === 'dark') {
+            editor.setTheme("ace/theme/twilight");
+        } else {
+            editor.setTheme("ace/theme/chrome");
         }
+    }
 
-        document.getElementById("dark-mode-button").addEventListener("change", function(e) {
-            if (e.target.checked) {
-                editor.setTheme("ace/theme/twilight");
-            } else {
-                editor.setTheme("ace/theme/chrome");
+    document.getElementById("dark-mode-button").addEventListener("change", function(e) {
+        if (e.target.checked) {
+            editor.setTheme("ace/theme/twilight");
+        } else {
+            editor.setTheme("ace/theme/chrome");
 
-            }
-        });
+        }
     });
     let data;
     let preData;
@@ -86,7 +133,7 @@
             let arr = new Uint8Array(event.target.result);
             if (file.name.endsWith(".layout")) {
                 preData = arr;
-                let d = new Deserializer(arr);
+                let d = new polyparser.Deserializer(arr);
                 d.deserializeLayout();
                 data = d.dumpJSON();
                 type = "Layout";
@@ -94,20 +141,20 @@
                 // decode into string
                 let str = new TextDecoder("utf-8").decode(arr);
                 preData = str;
-                let s = new Serializer(str);
+                let s = new polyparser.Serializer(str);
                 s.serializeLayout();
                 data = s.buffer;
                 type = "Layout JSON";
             } else if (file.name.endsWith(".slot")) {
                 preData = arr;
-                let d = new SlotDeserializer(arr);
+                let d = new polyparser.SlotDeserializer(arr);
                 d.deserializeSlot();
                 data = d.dumpJSON();
                 type = "Slot";
             } else if (file.name.endsWith(".slot.json")) {
                 let str = new TextDecoder("utf-8").decode(arr);
                 preData = str;
-                let s = new SlotSerializer(str);
+                let s = new polyparser.SlotSerializer(str);
                 s.serializeSlot();
                 data = s.buffer;
                 type = "Slot JSON";
@@ -202,54 +249,11 @@
         a.download = filename;
         a.click();
     }
-    </script>
-</head>
-<body>
-<!--    <div id="bg-canvas-div">-->
-<!--        <canvas id="bg-canvas"></canvas>-->
-<!--    </div>-->
-    <div id="container" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);">
-        <div id="content">
-            <div id="upload-button">
-                <button id="upload-file-fake" onclick="document.getElementById('upload-file').click();">Upload</button>
-                <input type="file" id="upload-file" onchange="uploadFile(event);"/>
-            </div>
-            <div id="filename">
-                <h1 id="filename-text"></h1>
-            </div>
-            <div id="json-container">
-                <div id="editor"></div>
-            </div>
-            <div id="buttons">
-                <button id="download-button" onclick="downloadFile(event)"></button>
-            </div>
-        </div>
-    </div>
-    <footer id="project-footer">
-        <p>PolyUtils: Utilities for Poly Bridge &middot; v1.2.2 &middot; MIT License</p>
-        <i class="fa-regular fa-sun fa-lg"></i>
-        <label id="dark-mode-button">
-            <input type="checkbox" id="dark-mode-checkbox" />
-            <span id="dark-mode-button-slider"></span>
-        </label>
-        <i class="fa-regular fa-moon footer-icon-dark fa-lg"></i>
-    </footer>
-    <script type="module">
-        // import {load_layout} from "/pkg/polyutils";
-        // document.getElementById('upload-file').addEventListener('change', e => {
-        //     let file = e.target.files[0];
-        //     fileName = file.name;
-        //     let reader = new FileReader();
-        //     // Get as uint8array
-        //     reader.readAsArrayBuffer(file);
-        //     reader.onload = function(event) {
-        //         let arr = new Uint8Array(event.target.result);
-        //         let start = performance.now();
-        //         load_layout(arr);
-        //         console.log(`took ${performance.now() - start}ms`);
-        //     }
-        // })
 
+    document.getElementById("container").addEventListener('dragover', dragOverHandler);
+    document.getElementById("container").addEventListener('drop', dropHandler);
+    document.getElementById("upload-file").addEventListener('change', uploadFile);
+    document.getElementById("download-button").addEventListener('click', downloadFile);
     </script>
 </body>
 </html>

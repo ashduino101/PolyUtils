@@ -111,7 +111,7 @@ function createUUID() {
   });
 }
 
-class Deserializer {
+export class Deserializer {
   constructor(data) {
     /**
      * Initializes a new Deserializer.
@@ -1261,7 +1261,7 @@ class Deserializer {
 }
 
 
-class Serializer {
+export class Serializer {
   constructor(layout) {
     if (typeof layout === 'object') {
       this.layout = layout;
@@ -1956,7 +1956,7 @@ class Serializer {
 }
 
 
-class SlotDeserializer {
+export class SlotDeserializer {
   constructor(buffer) {
     this.data = buffer;  // Is a Uint8Array for vanilla JS compatibility
     this.offset = 0;
@@ -2213,7 +2213,7 @@ class SlotDeserializer {
 }
 
 
-class SlotSerializer {
+export class SlotSerializer {
   constructor(slot) {
     if (typeof slot === 'object') {
       this.slot = slot;
