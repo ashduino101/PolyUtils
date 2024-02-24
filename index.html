@@ -220,10 +220,10 @@
     function downloadFile(event) {
         let s;
         if (type === "Layout JSON" || type === "Layout") {
-            s = new Serializer(editor.getValue());
+            s = new polyparser.Serializer(editor.getValue());
             s.serializeLayout();
         } else if (type === "Slot JSON" || type === "Slot") {
-            s = new SlotSerializer(editor.getValue());
+            s = new polyparser.SlotSerializer(editor.getValue());
             s.serializeSlot();
         } else {
             alert("Unknown file type!");
