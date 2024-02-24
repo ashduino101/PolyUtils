@@ -2,7 +2,7 @@
  * PolyParser.js - Parser for Poly Bridge 2 .layout and .slot files
  * Adapted for browser support.
  *
- * Copyright (c) 2022 Ashton Fairchild (ashduino101). All rights reserved.
+ * Copyright (c) 2024 ashduino101. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the "Software"),
@@ -276,6 +276,9 @@ class Deserializer {
       joint.isAnchor = this.readBool();
       joint.isSplit = this.readBool();
       joint.guid = this.readString();
+      if (this.layout.bridge.version >= 13) {
+        joint.noBuild = this.readBool();
+      }
       this.layout.bridge.joints.push(joint);
     }
 
@@ -289,7 +292,10 @@ class Deserializer {
       edge.nodeBGuid = this.readString();
       edge.jointAPart = this.readInt32();
       edge.jointBPart = this.readInt32();
-      if (this.layout.bridge.version >= 11) {
+      if (bridge_version >= 12) {
+        edge.bridgePrebuiltState = this.readInt32();
+      }
+      if (bridge_version >= 11) {
         edge.guid = this.readString();
       }
       this.layout.bridge.edges.push(edge);
@@ -383,19 +389,69 @@ class Deserializer {
         anchor.isAnchor = this.readBool();
         anchor.isSplit = this.readBool();
         anchor.guid = this.readString();
+        if (bridge_version >= 13) {
+          anchor.noBuild = this.readBool();
+        }
         this.layout.bridge.anchors.push(anchor);
       }
     }
 
-    // Random bool at end in v4-v8
+    // Random bool in v4-v8
     if (bridge_version >= 4 && bridge_version < 9) {
       this.readBool();
+    }
+
+    // Pillars
+    if (bridge_version > 11) {
+      count = this.readInt32();
+      this.layout.bridge.pillars = [];
+      for (let i = 0; i < count; i++) {
+        let pillar = {};
+        pillar.pos = this.readVec3();
+        pillar.height = this.readFloat();
+        pillar.prefabName = this.readString();
+        pillar.guid = this.readString();
+        pillar.anchorGuid = this.readString();
+        if (bridge_version >= 12) {
+          pillar.bridgePrebuiltState = this.readInt32();
+        }
+        this.layout.bridge.pillars.push(pillar);
+      }
+    }
+
+    // Pillar anchors
+    if (bridge_version > 11) {
+      count = this.readInt32();
+      this.layout.bridge.pillarAnchors = [];
+      for (let i = 0; i < count; i++) {
+        let anchor = {};
+        anchor.pos = this.readVec3();
+        anchor.isAnchor = this.readBool();
+        anchor.isSplit = this.readBool();
+        anchor.guid = this.readString();
+        if (bridge_version >= 13) {
+          anchor.noBuild = this.readBool();
+        }
+        this.layout.bridge.pillarAnchors.push(anchor);
+      }
+    }
+
+    // Edge colors
+    if (bridge_version >= 16) {
+      count = this.readInt32();
+      this.layout.bridge.edgeColors = [];
+      for (let i = 0; i < count; i++) {
+        let color = {};
+        color.key = this.readString();
+        color.value = this.readString();
+        this.layout.bridge.edgeColors.push(color);
+      }
     }
   }
   deserializeLayout() {
     // Version
     let version = this.readInt32();
-    this.layout.isModded = false;
+    this.layout.isPTFModded = false;
     if (version < 0) {
       // Modded layout
       version = -version;
@@ -406,6 +462,12 @@ class Deserializer {
       this.warnings.push(`Layout version ${version} is newer than the latest supported version ${MAX_LAYOUT_VERSION}.`);
     }
 
+    if (version >= 38) {
+      this.layout.bridgeVersion = this.readInt32();
+    } else {
+      this.layout.bridgeVersion = 0;  // prevent new features from being improperly deserialized
+    }
+
     // Stub key
     this.layout.themeStubKey = this.readString();
 
@@ -414,16 +476,15 @@ class Deserializer {
       // Anchors
       let count = this.readInt32();
       for (let i = 0; i < count; i++) {
-        let pos = this.readVec3();
-        let isAnchor = this.readBool();
-        let isSplit = this.readBool();
-        let guid = this.readString();
-        this.layout.anchors.push({
-          'pos': pos,
-          'isAnchor': isAnchor,
-          'isSplit': isSplit,
-          'guid': guid
-        });
+        let anchor = {};
+        anchor.pos = this.readVec3();
+        anchor.isAnchor = this.readBool();
+        anchor.isSplit = this.readBool();
+        anchor.guid = this.readString();
+        if (this.layout.bridgeVersion >= 13) {
+          anchor.noBuild = this.readBool();
+        }
+        this.layout.anchors.push(anchor);
       }
     }
 
@@ -445,7 +506,7 @@ class Deserializer {
       // Bridge
       this.deserializeBridge();
     } else {
-      // Different way
+      // Legacy format
       this.layout.bridge = {};
       // Joints
       let count = this.readInt32();
@@ -507,6 +568,16 @@ class Deserializer {
           vehicle.rot = this.readQuaternion();
           vehicle.rotationDegrees = this.readFloat();
         }
+        if (version >= 49) {
+          vehicle.uniformScale = this.readFloat();
+        }
+        if (version >= 54) {
+          vehicle.modId = this.readString();
+          vehicle.snapToWaterLine = this.readBool();
+        }
+        if (version >= 57) {
+          vehicle.reverse = this.readBool();
+        }
 
         this.layout.zedAxisVehicles.push(vehicle);
       }
@@ -536,6 +607,16 @@ class Deserializer {
       vehicle.orderedCheckpoints = this.readBool();
       vehicle.guid = this.readString();
 
+      if (version >= 50) {
+        vehicle.uniformScale = this.readFloat();
+      }
+      if (version >= 51) {
+        vehicle.skinId = this.readString();
+      }
+      if (version >= 54) {
+        vehicle.modId = this.readString();
+      }
+
       // Checkpoint GUIDs
       vehicle.checkpointGuids = [];
       let checkpointCount = this.readInt32();
@@ -556,6 +637,9 @@ class Deserializer {
       trigger.height = this.readFloat();
       trigger.rotationDegrees = this.readFloat();
       trigger.flipped = this.readBool();
+      if (version >= 73) {
+        trigger.invisibleInSim = this.readBool();
+      }
       trigger.prefabName = this.readString();
       trigger.stopVehicleGuid = this.readString();
 
@@ -635,6 +719,9 @@ class Deserializer {
       checkpoint.triggerTimeline = this.readBool();
       checkpoint.stopVehicle = this.readBool();
       checkpoint.reverseVehicleOnRestart = this.readBool();
+      if (version >= 73) {
+        checkpoint.invisibleInSim = this.readBool();
+      }
       checkpoint.guid = this.readString();
 
       this.layout.checkpoints.push(checkpoint);
@@ -655,7 +742,12 @@ class Deserializer {
       if (version >= 6) {
         island.lockPosition = this.readBool();
       }
-      island.hidden = (this.layout.version >= 27 && this.readBool());
+      if ((this.layout.version >= 27 && this.layout.version < 31) || this.layout.version >= 52) {
+        island.hidden = this.readBool();
+      }
+      if (version >= 34) {
+        island.height = this.readFloat();
+      }
 
       this.layout.terrainStretches.push(island);
     }
@@ -765,6 +857,12 @@ class Deserializer {
       rock.scale = this.readVec3();
       rock.prefabName = this.readString();
       rock.flipped = this.readBool();
+      if (version >= 60) {
+        rock.lockToBottom = this.readBool();
+      }
+      if (version >= 66) {
+        rock.uniformScale = this.readBool();
+      }
 
       this.layout.rocks.push(rock);
     }
@@ -808,6 +906,9 @@ class Deserializer {
     this.layout.budget.cable = this.readInt32();
     this.layout.budget.spring = this.readInt32();
     this.layout.budget.bungeeRope = this.readInt32();
+    if (version >= 30) {
+      this.layout.budget.pillar = this.readInt32();
+    }
 
     this.layout.budget.allowWood = this.readBool();
     this.layout.budget.allowSteel = this.readBool();
@@ -815,12 +916,55 @@ class Deserializer {
     this.layout.budget.allowRope = this.readBool();
     this.layout.budget.allowCable = this.readBool();
     this.layout.budget.allowSpring = this.readBool();
-    this.layout.budget.allowReinforcedRoad = this.readBool();
+    if (version <= 28) {
+      this.layout.budget.allowReinforcedRoad = this.readBool();
+    }
+    if (version >= 31) {
+      this.layout.budget.allowPillar = this.readBool();
+    }
 
     // Settings
+    if (version >= 61) {
+      this.layout.title = this.readString();
+      this.layout.description = this.readString();
+    }
     this.layout.settings.hydraulicsControllerEnabled = this.readBool();
     this.layout.settings.unbreakable = this.readBool();
+    if (version >= 55) {
+      this.layout.settings.unlimitedHeightFoundations = this.readBool();
+    }
     this.layout.settings.noWater = (this.layout.version >= 28 && this.readBool());
+    if (version >= 31) {
+      this.layout.settings.noReinforcedRoad = this.readBool();
+    }
+    if (version >= 30) {
+      this.layout.settings.springAdjustmentsAllowed = this.readBool();
+    }
+    if (version >= 36) {
+      this.layout.settings.hideDecor = this.readBool();
+    }
+    if (version >= 46) {
+      this.layout.settings.fogHeight = this.readFloat();
+    }
+    if (version >= 71) {
+      this.layout.settings.fogHeightMinWorldY = this.readFloat();
+      this.layout.settings.fogHeightMaxWorldY = this.readFloat();
+      this.layout.settings.fogHeightEndRelativeY = this.readFloat();
+    } else {
+      if (version >= 68) {
+        this.readFloat();
+        this.readFloat();
+      }
+    }
+    if (version >= 59) {
+      this.layout.settings.multiSelectMovementIncrement = this.readFloat();
+    }
+    if (version >= 69) {
+      this.layout.settings.thumbnailCameraSaved = this.readBool();
+      this.layout.settings.thumbnailCameraPos = this.readVec3();
+      this.layout.settings.thumbnailCameraRot = this.readQuaternion();
+      this.layout.settings.thumbnailCameraOrthographicSize = this.readFloat();
+    }
 
     // Custom shapes in v9+
     if (version > 9) {
@@ -828,13 +972,32 @@ class Deserializer {
       this.layout.customShapes = [];
       for (let i = 0; i < count; i++) {
         let s = {};
+        if (version >= 64) {
+          s.version = this.readInt32();
+        } else {
+          s.version = 0;
+        }
         s.pos = this.readVec3();
         s.rot = this.readQuaternion();
         s.scale = this.readVec3();
+        if (version >= 72) {
+          s.meshScale = this.readVec3();
+        }
         s.flipped = this.readBool();
-        s.dynamic = this.readBool();
+        if (version >= 74) {
+          s.lowFriction = this.readBool();
+        }
+        if (version < 45) {
+          s.dynamic = this.readBool();
+        }
         s.collidesWithRoad = this.readBool();
         s.collidesWithNodes = this.readBool();
+        if (version >= 53) {
+          s.collidesWithRamps = this.readBool();
+        }
+        if (version >= 30 && (version < 34 || version >= 64)) {
+          s.collidesWithVehicles = this.readBool();
+        }
         if (version >= 25) {
           s.collidesWithSplitNodes = this.readBool()
         }
@@ -862,6 +1025,25 @@ class Deserializer {
           s.pinMotorStrength = 0.0;
           s.pinTargetVelocity = 0.0;
         }
+        if (version >= 63) {
+          s.pinTargetAcceleration = this.readFloat();
+        }
+        if (version >= 44) {
+          s.thickness = this.readFloat();
+        }
+        if (version >= 41) {
+          s.textureId = this.readString();
+        }
+        if (version >= 47) {
+          s.meshId = this.readString();
+          s.meshLocalPos = this.readVec3();
+        }
+        if (version >= 45) {
+          s.textureTiling = this.readFloat();
+          s.behaviour = this.readInt32();
+        } else if (version >= 42) {
+          s.textureTiling = this.readVec2().x;
+        }
 
         // Points
         let count2 = this.readInt32();
@@ -874,9 +1056,7 @@ class Deserializer {
         count2 = this.readInt32();
         s.staticPins = [];
         for (let j = 0; j < count2; j++) {
-          let pos = this.readVec3();
-          pos.z = -1.348;
-          s.staticPins.push(pos);
+          s.staticPins.push(this.readVec3());
         }
 
         // Dynamic anchors
@@ -884,6 +1064,13 @@ class Deserializer {
         s.dynamicAnchorGuids = [];
         for (let j = 0; j < count2; j++) {
           s.dynamicAnchorGuids.push(this.readString());
+          if (version >= 48) {
+            s.dynamicAnchors = [];
+            let count3 = this.readInt32();
+            for (let k = 0; k < count3; k++) {
+              s.dynamicAnchors.push(this.readVec3());
+            }
+          }
         }
 
         this.layout.customShapes.push(s);
@@ -893,21 +1080,28 @@ class Deserializer {
     // Workshop in v15+
     if (version >= 15) {
       this.layout.workshop.id = this.readString();
-      if (version >= 16) {
+      if (version >= 16 && version <= 38) {
         this.layout.workshop.leaderboardId = this.readString();
       }
-      this.layout.workshop.title = this.readString();
-      this.layout.workshop.description = this.readString();
+      if (version < 61) {
+        this.layout.title = this.readString();
+        this.layout.description = this.readString();
+      }
       this.layout.workshop.autoplay = this.readBool();
-      count = this.readInt32();
-      this.layout.workshop.tags = [];
-      for (let i = 0; i < count; i++) {
-        this.layout.workshop.tags.push(this.readString());
+      if (version >= 67) {
+        this.layout.workshop.allowFeatured = this.readBool();
+      }
+      if (version < 70) {
+        count = this.readInt32();
+        this.layout.workshop.tags = [];
+        for (let i = 0; i < count; i++) {
+          this.layout.workshop.tags.push(this.readString());
+        }
       }
     }
 
-    // Support pillars in v17+
-    if (version >= 17) {
+    // Support pillars in v17-30
+    if (version >= 17 && version <= 30) {
       count = this.readInt32();
       this.layout.supportPillars = [];
       for (let i = 0; i < count; i++) {
@@ -934,8 +1128,82 @@ class Deserializer {
       }
     }
 
-    // PTF support
-    if (!this.layout.isModded) return;
+    // Build zones in v32+
+    if (version >= 32) {
+      count = this.readInt32();
+      this.layout.buildZones = [];
+      for (let i = 0; i < count; i++) {
+        let zone = {};
+        zone.pos = this.readVec2();
+        zone.size = this.readVec2();
+        zone.lockPosition = this.readBool();
+        if (version >= 43) {
+          zone.rotationDegrees = this.readFloat();
+        }
+        if (version >= 62) {
+          zone.type = this.readInt32();
+        }
+        if (zone.type === 1) {  // triangle
+          if (version >= 62) {
+            zone.vertices = [];
+            let count2 = this.readInt32();
+            for (let j = 0; j < count2; j++) {
+              zone.vertices.push(this.readVec3());
+            }
+          }
+        }
+      }
+    }
+
+    // Train tracks (obsolete)
+    if (version >= 33) {
+      this.layout.trainTracks = [];
+      count = this.readInt32();
+      for (let i = 0; i < count; i++) {
+        let track = {};
+        // i'm just guessing at these
+        track.pos = this.readVec3();
+        track.length = this.readFloat();
+        track.guid = this.readString();
+        this.layout.trainTracks.push(track);
+      }
+    }
+
+    if (this.offset >= this.data.length) {
+      return;  // idk probably some versioning issue
+    }
+
+    // Decors
+    if (version >= 35) {
+      this.layout.decors = [];
+      count = this.readInt32();
+      for (let i = 0; i < count; i++) {
+        let decor = {};
+        decor.pos = this.readVec3();
+        if (version >= 65) {
+          decor.scale = this.readVec3();
+        }
+        decor.yaw = this.readFloat();
+        if (version >= 58) {
+          decor.pitch = this.readFloat();
+          decor.roll = this.readFloat();
+        }
+        decor.id = this.readString();
+        if (version >= 40) {
+          decor.showInBuildMode = this.readBool();
+        }
+        if (version >= 66) {
+          decor.uniformScale = this.readBool();
+        }
+        if (version >= 54) {
+          decor.modId = this.readString();
+        }
+        this.layout.decors.push(decor);
+      }
+    }
+
+    // PTF support --------
+    if (!this.layout.isPTFModded) return;
 
     // Mod metadata
     count = this.readInt16();
