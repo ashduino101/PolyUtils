@@ -96,7 +96,7 @@
     import * as ace from 'ace-builds/src-noconflict/ace';
     import * as polyparser from '/js/polyparser.js';
 
-    ace.config.set('basePath', '/ace');
+    ace.config.set('basePath', '/');
     let editor = ace.edit("editor");
 
     const currentTheme = localStorage.getItem('theme') ? localStorage.getItem('theme') : null;
